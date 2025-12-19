@@ -3,9 +3,31 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-
+import { supabase } from '../../supabase/client';
 
 export default function Categorias({ categories, handleAddCategoryModal }) {
+
+  
+    const handleDeleteCategory = async (categoryId) => {
+        if (!window.confirm('¿Estás seguro de eliminar esta categoria?')) return;
+        console.log(categoryId)
+        try {          
+
+            // 2. Eliminar el producto de la tabla
+            const { error } = await supabase
+                .from('categories')
+                .delete()
+                .eq('id', categoryId);
+
+            if (error) throw error;           
+
+            alert('Categoria eliminada exitosamente');
+
+        } catch (error) {
+            console.error('Error al eliminar producto:', error);
+            alert('Error al eliminar producto');
+        }
+    };
 
   return (
     <div className="bg-white rounded-xl shadow border overflow-hidden">
@@ -39,7 +61,7 @@ export default function Categorias({ categories, handleAddCategoryModal }) {
                     <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
                       <Edit2 size={18} />
                     </button>
-                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg" onClick={(e)=>handleDeleteCategory(category.id)}>
                       <Trash2 size={18} />
                     </button>
                   </div>

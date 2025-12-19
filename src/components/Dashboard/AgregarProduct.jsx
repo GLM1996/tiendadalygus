@@ -337,40 +337,8 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
         } finally {
             setLoading(false);
         }
-    };
-   
+    };  
 
-    // Función para eliminar un producto (incluyendo sus imágenes de Supabase)
-    const handleDeleteProduct = async (productoId, imagenes) => {
-        if (!window.confirm('¿Estás seguro de eliminar este producto?')) return;
-
-        try {
-            // 1. Eliminar las imágenes del storage
-            if (imagenes && imagenes.length > 0) {
-                const fileNames = imagenes.map(url => url.split('/').pop());
-                await client.storage
-                    .from('productos')
-                    .remove(fileNames);
-            }
-
-            // 2. Eliminar el producto de la tabla
-            const { error } = await client
-                .from('productos')
-                .delete()
-                .eq('id', productoId);
-
-            if (error) throw error;
-
-            // 3. Actualizar estado local
-            //setProductos(prev => prev.filter(p => p.id !== productoId));
-
-            alert('Producto eliminado exitosamente');
-
-        } catch (error) {
-            console.error('Error al eliminar producto:', error);
-            alert('Error al eliminar producto');
-        }
-    };
 
     // Si no hay usuario, mostrar mensaje
     if (!user) {

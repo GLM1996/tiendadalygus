@@ -4,8 +4,43 @@ import {
   Trash2,
 } from 'lucide-react';
 
+import { supabase } from '../../supabase/client';
+
 
 export default function Productos({ products, handleAddProductModal }) {
+
+
+  // Función para eliminar un producto (incluyendo sus imágenes de Supabase)
+  const handleDeleteProduct = async (productoId, imagenes) => {
+    if (!window.confirm('¿Estás seguro de eliminar este producto?')) return;
+    console.log(imagenes)
+    try {
+      // 1. Eliminar las imágenes del storage
+      if (imagenes && imagenes.length > 0) {
+        const fileNames = imagenes.map(item => item.url.split('/').pop());        
+        await supabase.storage
+          .from('product-images')
+          .remove(fileNames);
+      }
+
+      // 2. Eliminar el producto de la tabla
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productoId);
+
+      if (error) throw error;
+
+      // 3. Actualizar estado local
+      //setProductos(prev => prev.filter(p => p.id !== productoId));
+
+      alert('Producto eliminado exitosamente');
+
+    } catch (error) {
+      console.error('Error al eliminar producto:', error);
+      alert('Error al eliminar producto');
+    }
+  };
 
 
   return (
@@ -55,7 +90,7 @@ export default function Productos({ products, handleAddProductModal }) {
                     <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
                       <Edit2 size={18} />
                     </button>
-                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg" onClick={() => handleDeleteProduct(producto.id, producto.imagenes)}>
                       <Trash2 size={18} />
                     </button>
                   </div>

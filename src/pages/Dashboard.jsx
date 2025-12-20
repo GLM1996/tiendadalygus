@@ -47,6 +47,7 @@ export default function Dashboard() {
                      short_description,
                      price,
                      stock_quantity,
+                     guaranty,
                      categories (
                          id,
                          name,
@@ -184,7 +185,7 @@ export default function Dashboard() {
 
   // // Función para agregar nuevo producto
   const handleAddProduct = (nuevoProducto) => {
-    setProductos([...productos, nuevoProducto]);
+    setProducts([...products, nuevoProducto]);
   };
 
   const handleAddCategory = (nuevaCategory) => {
@@ -193,14 +194,19 @@ export default function Dashboard() {
 
   // Función para eliminar producto
   const handleDeleteProduct = (id) => {
-    setProductos(productos.filter(producto => producto.id !== id));
+    setProducts(products.filter(producto => producto.id !== id));
   };
 
   if (loading) {
-    return (
-      <b>Loading</b>
-    )
-  }
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Cargando dashboard...</p>
+                </div>
+            </div>
+        );
+    }
   return (
     <div className="relative flex h-dvh overflow-hidden bg-gray-100">
       {/* Sidebar para Desktop - Siempre visible */}
@@ -406,7 +412,7 @@ export default function Dashboard() {
 
             {/* Contenido según menú seleccionado */}
             {activeMenu === 'productos' && (
-              <Productos products={products} handleAddProductModal={handleAddProductModal} />
+              <Productos products={products} handleAddProductModal={handleAddProductModal} onDelete={handleDeleteProduct} />
             )}
 
             {activeMenu === 'usuarios' && (

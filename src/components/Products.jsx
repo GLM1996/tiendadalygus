@@ -265,7 +265,7 @@ const Productos = () => {
                                         categoria: producto.categoria || 'Sin categoría',
                                         imagen: producto.imagen || null
                                     }}
-                                    contactoWhatsApp="5363835837"
+                                    contactoWhatsApp="5358912073"
                                 />
                             ))}
                         </div>

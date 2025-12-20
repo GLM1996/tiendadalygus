@@ -103,7 +103,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
         if (!formData.category) newErrors.category = 'La categoría es requerida';
         if (!formData.price) newErrors.price = 'El precio es requerido';
         if (formData.price && formData.price <= 0) newErrors.price = 'El precio debe ser mayor a 0';
-        if (!formData.stock_quantity) newErrors.stock_quantity = 'El stock es requerido';
+        //if (!formData.stock_quantity) newErrors.stock_quantity = 'El stock es requerido';
         if (formData.stock_quantity && formData.stock_quantity < 0) newErrors.stock_quantity = 'El stock no puede ser negativo';
 
         setErrors(newErrors);
@@ -295,7 +295,8 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
                     category_id: formData.category,
                     price: parseFloat(formData.price),
                     stock_quantity: parseInt(formData.stock_quantity),
-                    short_description: formData.description
+                    short_description: formData.description,
+                    guaranty: formData.guaranty
                 }])
                 .select();
 
@@ -320,11 +321,11 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
             // 4. Preparar objeto completo para el estado local
             const productoCompleto = {
                 ...newProduct,
-                category: categoryData,
-                imagenes: uploadedImages,
-                price: `$${parseFloat(formData.price).toFixed(2)}`
+                categoria: categoryData.name,
+                //imagenes: uploadedImages,
+                //price: `$${parseFloat(formData.price).toFixed(2)}`
             };
-
+            console.log(productoCompleto)
             // 5. Llamar callback
             onAddProduct(productoCompleto);
 
@@ -337,7 +338,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
         } finally {
             setLoading(false);
         }
-    };  
+    };
 
 
     // Si no hay usuario, mostrar mensaje
@@ -362,8 +363,13 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
 
     if (loadingCategorias) {
         return (
-            <div className='bg-blue-600 p-32 rounded'>Loading</div>
-        )
+            <div className="absolute top-0 min-h-screen min-w-screen flex items-center justify-center bg-black/30">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Cargando form productos...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -595,7 +601,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
                                 <input
                                     type="number"
                                     name="stock_quantity"
-                                    value={formData.stock_quantity || 23}
+                                    value={formData.stock_quantity}
                                     onChange={handleChange}
                                     placeholder="Ej: 100"
                                     min="0"
@@ -604,6 +610,28 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
                                 />
                                 {errors.stock_quantity && (
                                     <p className="mt-2 text-sm text-red-600">{errors.stock_quantity}</p>
+                                )}
+                            </div>
+
+                            {/* Guaranty */}
+                            <div className="">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <Eye size={16} />
+                                        Garantia del Producto
+                                    </div>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="guaranty"
+                                    value={formData.guaranty}
+                                    onChange={handleChange}
+                                    placeholder="2 meses"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${errors.guaranty ? 'border-red-500' : 'border-gray-300'
+                                        }`}
+                                />
+                                {errors.guaranty && (
+                                    <p className="mt-2 text-sm text-red-600">{errors.guaranty}</p>
                                 )}
                             </div>
 

@@ -7,7 +7,7 @@ import {
 import { supabase } from '../../supabase/client';
 
 
-export default function Productos({ products, handleAddProductModal }) {
+export default function Productos({ products, handleAddProductModal,onDelete }) {
 
 
   // Función para eliminar un producto (incluyendo sus imágenes de Supabase)
@@ -32,7 +32,7 @@ export default function Productos({ products, handleAddProductModal }) {
       if (error) throw error;
 
       // 3. Actualizar estado local
-      //setProductos(prev => prev.filter(p => p.id !== productoId));
+      onDelete(productoId)      
 
       alert('Producto eliminado exitosamente');
 
@@ -62,6 +62,7 @@ export default function Productos({ products, handleAddProductModal }) {
               <th className="py-3 px-6 text-left text-gray-600 font-semibold">Categoría</th>
               <th className="py-3 px-6 text-left text-gray-600 font-semibold">Precio</th>
               <th className="py-3 px-6 text-left text-gray-600 font-semibold">Stock</th>
+              <th className="py-3 px-6 text-left text-gray-600 font-semibold">Garantia</th>
               <th className="py-3 px-6 text-left text-gray-600 font-semibold">Acciones</th>
             </tr>
           </thead>
@@ -85,6 +86,7 @@ export default function Productos({ products, handleAddProductModal }) {
                     {producto.stock_quantity} unidades
                   </span>
                 </td>
+                <td className="py-4 px-6 font-medium">{producto.guaranty}</td>
                 <td className="py-4 px-6">
                   <div className="flex gap-2">
                     <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">

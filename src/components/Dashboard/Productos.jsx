@@ -89,7 +89,7 @@ export default function Productos({ products, handleAddProductModal,onDelete }) 
                 <td className="py-4 px-6 font-medium">{producto.guaranty}</td>
                 <td className="py-4 px-6">
                   <div className="flex gap-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => handleAddProductModal(true,producto)}>
                       <Edit2 size={18} />
                     </button>
                     <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg" onClick={() => handleDeleteProduct(producto.id, producto.imagenes)}>

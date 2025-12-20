@@ -29,8 +29,9 @@ export default function Dashboard() {
   const [addCategoryModal, setAddCategoryModal] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true)
-  const [products,setProducts] = useState([])
-  const [categories,setCategories] = useState([])
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [editProduct, setEditProduct] = useState()
 
   const navigate = useNavigate()
 
@@ -62,7 +63,7 @@ export default function Dashboard() {
         .order('name');
 
       if (productsError) throw productsError;
-        
+
       // Obtener categorías únicas para los filtros
       const categoriasUnicas = {};
       const categoriasConCantidad = [];
@@ -174,9 +175,13 @@ export default function Dashboard() {
     { id: 'ventas', label: 'Ventas', icon: <ShoppingCart size={20} /> },
   ];
 
-  const handleAddProductModal = (estado) => {
-    console.log(estado)
+  const handleAddProductModal = (estado, product) => {
     setAddProductModal(estado)
+    if (product) {
+      setEditProduct(product)
+    } else {
+      setEditProduct()
+    }
   }
   const handleAddCategoryModal = (estado) => {
     console.log(estado)
@@ -198,15 +203,15 @@ export default function Dashboard() {
   };
 
   if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Cargando dashboard...</p>
-                </div>
-            </div>
-        );
-    }
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="relative flex h-dvh overflow-hidden bg-gray-100">
       {/* Sidebar para Desktop - Siempre visible */}
@@ -407,7 +412,7 @@ export default function Dashboard() {
                     <Tag className="text-purple-600" size={24} />
                   </div>
                 </div>
-              </div>              
+              </div>
             </div>
 
             {/* Contenido según menú seleccionado */}
@@ -449,6 +454,7 @@ export default function Dashboard() {
           handleAddProductModal={handleAddProductModal}
           onAddProduct={handleAddProduct}
           user={user}
+          product={editProduct}
         />
       )}
       {/* Modal Agregar Category */}

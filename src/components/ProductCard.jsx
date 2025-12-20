@@ -6,7 +6,7 @@ const ProductCard = ({ producto, contactoWhatsApp }) => {
     
 📱 *${producto.name}*
 💰 Precio: $${producto.price.toLocaleString()}
-📋 Código: ${producto.id}
+📋 Descripcion: ${producto.description}
 
 ¿Podrían darme más información?`;
 

@@ -24,7 +24,7 @@ import {
 import { supabase } from '../../supabase/client';
 
 // Componente para el modal de agregar producto
-export default function AgregarProduct({ handleAddProductModal, onAddProduct, user }) {
+export default function AgregarProduct({ handleAddProductModal, onAddProduct, user, product }) {
     const [categorias, setCategorias] = useState([]);
     const [loadingCategorias, setLoadingCategorias] = useState(false);
 
@@ -33,6 +33,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
         category: '',
         price: '',
         stock_quantity: '',
+        guaranty: '',
         description: '',
         imagenes: [] // Array para múltiples imágenes
     });
@@ -86,6 +87,21 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
         fetchCategorias();
     }, []);
 
+    useEffect(() => {
+        if (!loadingCategorias && product) {
+            const updated = {
+                name: product.name,
+                category: product.categories.id,
+                price: product.price,
+                guaranty: product.guaranty,
+                description: product.short_description,
+                imagenes: product.product_images
+            }
+            setFormData(updated)
+            setPreviewImages(product.product_images)
+        }
+    }, [product])
+
     // Ver imagen en grande
     const handleViewImage = (url) => {
         window.open(url, '_blank');
@@ -129,7 +145,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
     // Función para subir imágenes a Supabase Storage
     const uploadImagesToSupabase = async (files, productId) => {
         console.log('Subiendo', files.length, 'imágenes para producto ID:', productId);
-
+        console.log(files,productId)
         const uploadedImages = [];
 
         for (let i = 0; i < files.length; i++) {
@@ -244,7 +260,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
             url: URL.createObjectURL(file),
             file: file
         }));
-
+        
         setPreviewImages(prev => [...prev, ...newPreviews]);
         setFormData(prev => ({
             ...prev,
@@ -256,13 +272,14 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
 
     // Función para eliminar una imagen (tanto del estado como de Supabase si ya se subió)
     const handleRemoveImage = async (index, image) => {
-        try {
+        console.log(image)
+        try {            
             // Si la imagen ya tiene una URL de Supabase (no es un archivo local), eliminarla del storage
-            if (image.supabaseUrl && !image.file) {
+            if (image && image.url && !image.file) {
                 // Extraer el nombre del archivo de la URL
-                const fileName = image.supabaseUrl.split('/').pop();
-                await client.storage
-                    .from('productos')
+                const fileName = image.url.split('/').pop();
+                await supabase.storage
+                    .from('product-images')
                     .remove([fileName]);
             }
         } catch (error) {
@@ -278,67 +295,222 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
     };
 
     // Submit del formulario
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
+
+    //     if (!validateForm()) return;
+
+    //     setLoading(true);
+
+    //     if (!product) {
+    //         try {
+    //             // 1. Crear el producto en la tabla products
+    //             const { data: productData, error: productError } = await supabase
+    //                 .from('products')
+    //                 .insert([{
+    //                     name: formData.name,
+    //                     slug: formData.name.toLowerCase(),
+    //                     category_id: formData.category,
+    //                     price: parseFloat(formData.price),
+    //                     stock_quantity: parseInt(formData.stock_quantity),
+    //                     short_description: formData.description,
+    //                     guaranty: formData.guaranty
+    //                 }])
+    //                 .select();
+
+    //             if (productError) throw productError;
+
+    //             const newProduct = productData[0];
+    //             const productId = newProduct.id;
+
+    //             // 2. Subir imágenes a Storage y guardar en products_imagenes
+    //             let uploadedImages = [];
+    //             if (formData.imagenes.length > 0) {
+    //                 uploadedImages = await uploadImagesToSupabase(formData.imagenes, productId);
+    //             }
+
+    //             // 3. Obtener la categoría completa (join)
+    //             const { data: categoryData } = await supabase
+    //                 .from('categories')
+    //                 .select('*')
+    //                 .eq('id', formData.category)
+    //                 .single();
+
+    //             // 4. Preparar objeto completo para el estado local
+    //             const productoCompleto = {
+    //                 ...newProduct,
+    //                 categoria: categoryData.name,
+    //                 //imagenes: uploadedImages,
+    //                 //price: `$${parseFloat(formData.price).toFixed(2)}`
+    //             };
+    //             console.log(productoCompleto)
+    //             // 5. Llamar callback
+    //             onAddProduct(productoCompleto);
+
+    //             // 6. Limpiar y cerrar
+    //             onClose();
+
+    //         } catch (error) {
+    //             console.error('Error al crear producto:', error);
+    //             alert(`Error: ${error.message}`);
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     } else {
+    //         try {
+    //             // 1. Crear el producto en la tabla products
+    //             const { data: productData, error: productError } = await supabase
+    //                 .from('products')
+    //                 .insert([{
+    //                     name: formData.name,
+    //                     slug: formData.name.toLowerCase(),
+    //                     category_id: formData.category,
+    //                     price: parseFloat(formData.price),
+    //                     stock_quantity: parseInt(formData.stock_quantity),
+    //                     short_description: formData.description,
+    //                     guaranty: formData.guaranty
+    //                 }])
+    //                 .select();
+
+    //             if (productError) throw productError;
+
+    //             const newProduct = productData[0];
+    //             const productId = newProduct.id;
+
+    //             // 2. Subir imágenes a Storage y guardar en products_imagenes
+    //             let uploadedImages = [];
+    //             if (formData.imagenes.length > 0) {
+    //                 uploadedImages = await uploadImagesToSupabase(formData.imagenes, productId);
+    //             }
+
+    //             // 3. Obtener la categoría completa (join)
+    //             const { data: categoryData } = await supabase
+    //                 .from('categories')
+    //                 .select('*')
+    //                 .eq('id', formData.category)
+    //                 .single();
+
+    //             // 4. Preparar objeto completo para el estado local
+    //             const productoCompleto = {
+    //                 ...newProduct,
+    //                 categoria: categoryData.name,
+    //                 //imagenes: uploadedImages,
+    //                 //price: `$${parseFloat(formData.price).toFixed(2)}`
+    //             };
+    //             console.log(productoCompleto)
+    //             // 5. Llamar callback
+    //             onAddProduct(productoCompleto);
+
+    //             // 6. Limpiar y cerrar
+    //             onClose();
+
+    //         } catch (error) {
+    //             console.error('Error al crear producto:', error);
+    //             alert(`Error: ${error.message}`);
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     }
+    // };
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) return;
-
         setLoading(true);
 
         try {
-            // 1. Crear el producto en la tabla products
-            const { data: productData, error: productError } = await supabase
-                .from('products')
-                .insert([{
-                    name: formData.name,
-                    slug: formData.name.toLowerCase(),
-                    category_id: formData.category,
-                    price: parseFloat(formData.price),
-                    stock_quantity: parseInt(formData.stock_quantity),
-                    short_description: formData.description,
-                    guaranty: formData.guaranty
-                }])
-                .select();
+            let productId;
+            let productData;
 
-            if (productError) throw productError;
+            // =========================
+            // CREATE
+            // =========================
+            if (!product) {
+                const { data, error } = await supabase
+                    .from('products')
+                    .insert([{
+                        name: formData.name,
+                        slug: formData.name.toLowerCase(),
+                        category_id: formData.category,
+                        price: parseFloat(formData.price),
+                        stock_quantity: parseInt(formData.stock_quantity),
+                        short_description: formData.description,
+                        guaranty: formData.guaranty
+                    }])
+                    .select()
+                    .single();
 
-            const newProduct = productData[0];
-            const productId = newProduct.id;
+                if (error) throw error;
 
-            // 2. Subir imágenes a Storage y guardar en products_imagenes
-            let uploadedImages = [];
-            if (formData.imagenes.length > 0) {
-                uploadedImages = await uploadImagesToSupabase(formData.imagenes, productId);
+                productData = data;
+                productId = data.id;
             }
 
-            // 3. Obtener la categoría completa (join)
+            // =========================
+            // UPDATE
+            // =========================
+            else {
+                console.log(formData)
+                const { data, error } = await supabase
+                    .from('products')
+                    .update({
+                        name: formData.name,
+                        slug: formData.name.toLowerCase(),
+                        category_id: formData.category,
+                        price: parseFloat(formData.price),
+                        stock_quantity: parseInt(formData.stock_quantity),
+                        short_description: formData.description,
+                        guaranty: formData.guaranty
+                    })
+                    .eq('id', product.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                productData = data;
+                productId = product.id;
+            }
+
+            // =========================
+            // IMÁGENES (solo si hay nuevas)
+            // =========================
+            if (formData.imagenes?.length > 0) {
+                await uploadImagesToSupabase(formData.imagenes, productId);
+            }
+
+            // =========================
+            // OBTENER CATEGORÍA
+            // =========================
             const { data: categoryData } = await supabase
                 .from('categories')
-                .select('*')
+                .select('name')
                 .eq('id', formData.category)
                 .single();
 
-            // 4. Preparar objeto completo para el estado local
+            // =========================
+            // OBJETO FINAL
+            // =========================
             const productoCompleto = {
-                ...newProduct,
-                categoria: categoryData.name,
-                //imagenes: uploadedImages,
-                //price: `$${parseFloat(formData.price).toFixed(2)}`
+                ...productData,
+                categoria: categoryData?.name || ''
             };
-            console.log(productoCompleto)
-            // 5. Llamar callback
-            onAddProduct(productoCompleto);
 
-            // 6. Limpiar y cerrar
+            // =========================
+            // CALLBACK
+            // =========================
+            product ? onUpdateProduct(productoCompleto) : onAddProduct(productoCompleto);
+
             onClose();
 
         } catch (error) {
-            console.error('Error al crear producto:', error);
+            console.error('Error al guardar producto:', error);
             alert(`Error: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
+
 
 
     // Si no hay usuario, mostrar mensaje
@@ -457,7 +629,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleRemoveImage(index)}
+                                                            onClick={() => handleRemoveImage(index,image)}
                                                             className="p-2 bg-white rounded-full hover:bg-gray-100"
                                                             title="Eliminar"
                                                         >
@@ -665,8 +837,8 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
                                 disabled={loading}
                                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                             >
-                                <Plus size={18} />
-                                Agregar Producto
+
+                                {product ? <> <Edit2 size={18} /> Editar Product </> : <> <Plus size={18} /> Agregar Product </>}
                             </button>
                         </div>
                     </form>

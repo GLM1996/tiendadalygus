@@ -27,12 +27,11 @@ import { supabase } from '../../supabase/client';
 export default function AgregarProduct({ handleAddProductModal, onAddProduct, user, product }) {
     const [categorias, setCategorias] = useState([]);
     const [loadingCategorias, setLoadingCategorias] = useState(false);
-
     const [formData, setFormData] = useState({
         name: '',
         category: '',
         price: '',
-        stock_quantity: '',
+        stock_quantity: 20,
         guaranty: '',
         description: '',
         imagenes: [] // Array para múltiples imágenes
@@ -40,7 +39,6 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
     const [errors, setErrors] = useState({});
     const [previewImages, setPreviewImages] = useState([]);
     const fileInputRef = useRef(null);
-
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -48,8 +46,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
         console.log("Cerrando")
         handleAddProductModal(false)
     }
-
-
+    console.log(product)
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({
@@ -89,13 +86,15 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
 
     useEffect(() => {
         if (!loadingCategorias && product) {
+
             const updated = {
-                name: product.name,
-                category: product.categories.id,
-                price: product.price,
-                guaranty: product.guaranty,
-                description: product.short_description,
-                imagenes: product.product_images
+                name: product.name || "",
+                category: product.categories.id || "",
+                price: product.price || "",
+                stock_quantity: parseInt(product.stock_quantity) || 0,
+                guaranty: product.guaranty || "",
+                description: product.short_description || "",
+                imagenes: product.product_images || ""
             }
             setFormData(updated)
             setPreviewImages(product.product_images)
@@ -145,7 +144,6 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
     // Función para subir imágenes a Supabase Storage
     const uploadImagesToSupabase = async (files, productId) => {
         console.log('Subiendo', files.length, 'imágenes para producto ID:', productId);
-        console.log(files,productId)
         const uploadedImages = [];
 
         for (let i = 0; i < files.length; i++) {
@@ -182,9 +180,9 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
 
                 console.log('URL pública generada:', publicUrl);
 
-                // 4. Guardar en la tabla products_imagenes (¡fíjate en el nombre!)
+                // 4. Guardar en la tabla products_imagenes
                 const { data: imageData, error: dbError } = await supabase
-                    .from('product_images') // Asegúrate que este es el nombre correcto
+                    .from('product_images')
                     .insert([{
                         product_id: productId,
                         url: publicUrl,
@@ -198,21 +196,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
 
                 if (dbError) {
                     console.error('Error al guardar en products_imagenes:', dbError);
-                    console.error('Detalles del error:', {
-                        message: dbError.message,
-                        details: dbError.details,
-                        hint: dbError.hint,
-                        code: dbError.code
-                    });
-
-                    // Intentar eliminar la imagen del storage si falla la BD
-                    await supabase.storage
-                        .from('product-images')
-                        .remove([fileName])
-                        .catch(cleanupError =>
-                            console.error('Error limpiando archivo:', cleanupError)
-                        );
-
+                    await supabase.storage.from('product-images').remove([fileName]);
                     throw dbError;
                 }
 
@@ -228,6 +212,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
         console.log('Subida completada. Total imágenes:', uploadedImages.length);
         return uploadedImages;
     };
+
 
     // Función para manejar la selección de imágenes
     const handleImageUpload = async (e) => {
@@ -260,7 +245,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
             url: URL.createObjectURL(file),
             file: file
         }));
-        
+
         setPreviewImages(prev => [...prev, ...newPreviews]);
         setFormData(prev => ({
             ...prev,
@@ -270,17 +255,14 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
         e.target.value = '';
     };
 
-    // Función para eliminar una imagen (tanto del estado como de Supabase si ya se subió)
+    // Función para eliminar una imagen
     const handleRemoveImage = async (index, image) => {
-        console.log(image)
-        try {            
-            // Si la imagen ya tiene una URL de Supabase (no es un archivo local), eliminarla del storage
+        console.log(image);
+        try {
+            // Si la imagen ya está subida a Supabase, eliminarla de allí
             if (image && image.url && !image.file) {
-                // Extraer el nombre del archivo de la URL
                 const fileName = image.url.split('/').pop();
-                await supabase.storage
-                    .from('product-images')
-                    .remove([fileName]);
+                await supabase.storage.from('product-images').remove([fileName]);
             }
         } catch (error) {
             console.error('Error al eliminar imagen de Supabase:', error);
@@ -293,6 +275,114 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
             imagenes: prev.imagenes.filter((_, i) => i !== index)
         }));
     };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!validateForm()) return;
+        setLoading(true);
+
+        try {
+            let productId;
+            let productData;
+
+            // =========================
+            // CREATE
+            // =========================
+            if (!product) {
+                const { data, error } = await supabase
+                    .from('products')
+                    .insert([{
+                        name: formData.name,
+                        slug: formData.name.toLowerCase(),
+                        category_id: formData.category,
+                        price: parseFloat(formData.price),
+                        stock_quantity: parseInt(formData.stock_quantity),
+                        short_description: formData.description,
+                        guaranty: formData.guaranty
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                productData = data;
+                productId = data.id;
+            }
+
+            // =========================
+            // UPDATE
+            // =========================
+            else {
+                const { data, error } = await supabase
+                    .from('products')
+                    .update({
+                        name: formData.name,
+                        slug: formData.name.toLowerCase(),
+                        category_id: formData.category,
+                        price: parseFloat(formData.price),
+                        stock_quantity: parseInt(formData.stock_quantity),
+                        short_description: formData.description,
+                        guaranty: formData.guaranty
+                    })
+                    .eq('id', product.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                productData = data;
+                productId = product.id;
+            }
+
+            // =========================
+            // IMÁGENES (solo si hay nuevas)
+            // =========================
+           
+            if (formData.imagenes?.length > 0) {
+                // Filtrar las imágenes que son de tipo 'File' (es decir, nuevas imágenes)
+                const newImages = formData.imagenes.filter(item => item instanceof File);
+
+                if (newImages.length > 0) {
+                    // Subir solo las nuevas imágenes
+                    await uploadImagesToSupabase(newImages, productId);
+                }
+            }
+            // =========================
+            // OBTENER CATEGORÍA
+            // =========================
+            const { data: categoryData } = await supabase
+                .from('categories')
+                .select('name')
+                .eq('id', formData.category)
+                .single();
+
+            // =========================
+            // OBJETO FINAL
+            // =========================
+            const productoCompleto = {
+                ...productData,
+                id: productId,
+                categoria: categoryData?.name || '',
+                categories: { id: productData.category_id },
+                product_images: formData.imagenes
+            };
+
+            // =========================
+            // CALLBACK
+            // =========================
+            product ? onAddProduct(productoCompleto, 'updated') : onAddProduct(productoCompleto, 'create');
+
+            onClose();
+
+        } catch (error) {
+            console.error('Error al guardar producto:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     // Submit del formulario
     // const handleSubmit = async (e) => {
@@ -412,104 +502,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
     //         }
     //     }
     // };
-    const handleSubmit = async (e) => {
-        e.preventDefault();
 
-        if (!validateForm()) return;
-        setLoading(true);
-
-        try {
-            let productId;
-            let productData;
-
-            // =========================
-            // CREATE
-            // =========================
-            if (!product) {
-                const { data, error } = await supabase
-                    .from('products')
-                    .insert([{
-                        name: formData.name,
-                        slug: formData.name.toLowerCase(),
-                        category_id: formData.category,
-                        price: parseFloat(formData.price),
-                        stock_quantity: parseInt(formData.stock_quantity),
-                        short_description: formData.description,
-                        guaranty: formData.guaranty
-                    }])
-                    .select()
-                    .single();
-
-                if (error) throw error;
-
-                productData = data;
-                productId = data.id;
-            }
-
-            // =========================
-            // UPDATE
-            // =========================
-            else {
-                console.log(formData)
-                const { data, error } = await supabase
-                    .from('products')
-                    .update({
-                        name: formData.name,
-                        slug: formData.name.toLowerCase(),
-                        category_id: formData.category,
-                        price: parseFloat(formData.price),
-                        stock_quantity: parseInt(formData.stock_quantity),
-                        short_description: formData.description,
-                        guaranty: formData.guaranty
-                    })
-                    .eq('id', product.id)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-
-                productData = data;
-                productId = product.id;
-            }
-
-            // =========================
-            // IMÁGENES (solo si hay nuevas)
-            // =========================
-            if (formData.imagenes?.length > 0) {
-                await uploadImagesToSupabase(formData.imagenes, productId);
-            }
-
-            // =========================
-            // OBTENER CATEGORÍA
-            // =========================
-            const { data: categoryData } = await supabase
-                .from('categories')
-                .select('name')
-                .eq('id', formData.category)
-                .single();
-
-            // =========================
-            // OBJETO FINAL
-            // =========================
-            const productoCompleto = {
-                ...productData,
-                categoria: categoryData?.name || ''
-            };
-
-            // =========================
-            // CALLBACK
-            // =========================
-            product ? onUpdateProduct(productoCompleto) : onAddProduct(productoCompleto);
-
-            onClose();
-
-        } catch (error) {
-            console.error('Error al guardar producto:', error);
-            alert(`Error: ${error.message}`);
-        } finally {
-            setLoading(false);
-        }
-    };
 
 
 
@@ -629,7 +622,7 @@ export default function AgregarProduct({ handleAddProductModal, onAddProduct, us
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleRemoveImage(index,image)}
+                                                            onClick={() => handleRemoveImage(index, image)}
                                                             className="p-2 bg-white rounded-full hover:bg-gray-100"
                                                             title="Eliminar"
                                                         >

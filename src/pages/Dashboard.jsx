@@ -189,8 +189,18 @@ export default function Dashboard() {
   }
 
   // // Función para agregar nuevo producto
-  const handleAddProduct = (nuevoProducto) => {
-    setProducts([...products, nuevoProducto]);
+  const handleAddProduct = (nuevoProducto, estado) => {
+    if (estado === 'create') {
+      setProducts([...products, nuevoProducto]);
+    } else {
+      if (estado === 'updated') {
+        // Reemplazar el producto si ya existe (por ID o algo único)
+        setProducts(products.map(product =>
+          product.id === nuevoProducto.id ? nuevoProducto : product
+        ));
+      }
+    }
+
   };
 
   const handleAddCategory = (nuevaCategory) => {

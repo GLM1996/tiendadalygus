@@ -129,8 +129,12 @@ export default function Navbar() {
                 >
                     {navItems.map((item, index) => (
                         <motion.a
-                            key={item}
-                            href={`#${item.toLowerCase()}`}
+                            key={item}                            
+                            href={
+                                item === 'Inicio'
+                                    ? '#'
+                                    : `#${item.toLowerCase()}`
+                            }
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.3, delay: index * 0.1 }}
